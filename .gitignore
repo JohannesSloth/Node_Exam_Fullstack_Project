@@ -128,3 +128,12 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Database files
+*.db
+
+# IDE files
+.idea
+**/.idea
+.vscode
+**/.vscode
