@@ -11,7 +11,6 @@
 
   onMount(async () => {
     try {
-      messages = await chatUtil.getMessages();
       const unsubscribe = userStore.subscribe((currentUser) => {
         if (currentUser) {
           username = currentUser?.username;
@@ -20,6 +19,16 @@
         }
       });
       unsubscribe();
+      messages = await chatUtil.getMessages();
+      chatUtil.subscribeToChat((error, newMessage) => {
+      if (error) {
+        console.error(error);
+      } else {
+        console.log('Received message via socketio:', newMessage);
+        messages = [...messages, newMessage];
+      }
+    });
+
     } catch (error) {
       console.error(error);
     }
@@ -37,8 +46,8 @@
       if (response.error) {
         errorMessage = response.error;
       } else {
-        console.log('response.message:', response.message);
-        messages = [...messages, response.message];
+        console.log("response.message:", response.message);
+        //messages = [...messages, response.message];
         newMessage = "";
       }
     } catch (error) {
