@@ -14,7 +14,7 @@ router.get("/api/chat", async (req, res) => {
   }
 });
 
-router.post("/api/chat", async (req, res) => {
+/*router.post("/api/chat", async (req, res) => {
   const { username, message } = req.body;
   console.log("Username in backend post: " + username + " Message in backend post: " + message);
 
@@ -33,6 +33,6 @@ router.post("/api/chat", async (req, res) => {
       .status(500)
       .json({ error: "An error occurred when sending a message." });
   }
-});
+});*/
 
 export default router;
