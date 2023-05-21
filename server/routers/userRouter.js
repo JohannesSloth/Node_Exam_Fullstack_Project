@@ -4,11 +4,12 @@ import { body, validationResult } from "express-validator";
 import apiLimiter from "../utils/rateLimiter.js";
 import db from "../database/connection.js";
 import { sendSignedUpMail } from "../utils/nodemailer.js";
+import { ObjectId } from "mongodb";
 
 const router = Router();
 
 router.post(
-  "/api/signup",
+  "/api/auth/signup",
   apiLimiter,
   [
     body("username")
@@ -63,7 +64,7 @@ router.post(
   }
 );
 
-router.post("/api/login", async (req, res) => {
+router.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
 
   const user = await db.users.findOne({ username: username });
@@ -78,10 +79,15 @@ router.post("/api/login", async (req, res) => {
 
   req.session.userId = user._id;
 
-  res.status(200).json({ message: "Logged in successfully" });
+  const userResponse = { ...user };
+  delete userResponse.password;
+
+  res
+    .status(200)
+    .json({ message: "Logged in successfully", user: userResponse });
 });
 
-router.post("/api/logout", (req, res) => {
+router.post("/api/auth/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       return res
@@ -92,6 +98,53 @@ router.post("/api/logout", (req, res) => {
     res.clearCookie("connect.sid");
     return res.status(200).json({ message: "Logged out successfully" });
   });
+});
+
+router.get("/api/auth/user", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  try {
+    console.log("Session userId:", req.session.userId);
+    const user = await db.users.findOne(
+      { _id: new ObjectId(req.session.userId) },
+      { projection: { password: 0 } }
+    );
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/api/auth/user/flair", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const { flair } = req.body;
+
+  try {
+    const updatedUser = await db.users.findOneAndUpdate(
+      { _id: new ObjectId(req.session.userId) },
+      { $set: { flair } },
+      { projection: { password: 0 }, returnDocument: "after" }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ user: updatedUser.value });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Error updating flair" });
+  }
 });
 
 export default router;

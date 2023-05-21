@@ -7,5 +7,6 @@ const client = new MongoClient(url);
 const db = client.db("wowchatter");
 
 export default {
-    users: db.collection("users")
+    users: db.collection("users"),
+    chatMessages: db.collection("chatMessages")
 }

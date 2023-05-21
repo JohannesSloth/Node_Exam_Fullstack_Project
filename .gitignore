@@ -137,3 +137,6 @@ dist
 **/.idea
 .vscode
 **/.vscode
+
+#Buggy client
+client/
