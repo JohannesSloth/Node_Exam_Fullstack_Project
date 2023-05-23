@@ -9,30 +9,47 @@
 
 <main>
   <Router>
-    <nav>
-      <Link to="/">Home</Link>
-      <Link to="/chat">Chat</Link>
-      <Link to="/login">Login</Link>
-      <Link to="/profile">Profile</Link>
-      <Link to="/signup">Sign Up</Link>
+    <nav
+      class="bg-gray-800 text-white flex justify-center py-4 px-6 sticky top-0 z-10"
+    >
+      <Link
+        class="bg-red-600 hover:bg-red-700 text-white no-underline ml-2 px-4 py-2 rounded-lg transition-colors duration-200"
+        to="/">Home</Link
+      >
+      <Link
+        class="bg-red-600 hover:bg-red-700 text-white no-underline ml-2 px-4 py-2 rounded-lg transition-colors duration-200"
+        to="/chat">Chat</Link
+      >
+      <Link
+        class="bg-red-600 hover:bg-red-700 text-white no-underline ml-2 px-4 py-2 rounded-lg transition-colors duration-200"
+        to="/login">Login</Link
+      >
+      <Link
+        class="bg-red-600 hover:bg-red-700 text-white no-underline ml-2 px-4 py-2 rounded-lg transition-colors duration-200"
+        to="/profile">Profile</Link
+      >
+      <Link
+        class="bg-red-600 hover:bg-red-700 text-white no-underline ml-2 px-4 py-2 rounded-lg transition-colors duration-200"
+        to="/signup">Sign Up</Link
+      >
     </nav>
 
     <Route path="/">
       <Home />
     </Route>
-    
+
     <Route path="/chat">
       <Chat />
     </Route>
-  
+
     <Route path="/login" primary={false}>
       <Login />
     </Route>
-    
+
     <Route path="/profile" primary={false}>
       <Profile />
     </Route>
-    
+
     <Route path="/signup">
       <Signup />
     </Route>
@@ -40,5 +57,4 @@
 </main>
 
 <style>
-
 </style>

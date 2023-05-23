@@ -71,26 +71,65 @@
   }
 </script>
 
-<main>
-  {#if user}
-    <h1>{user.username}'s Profile</h1>
-    <p>Email: {user.email}</p>
+<main
+  class="min-h-screen bg-gray-800 py-6 flex flex-col justify-center sm:py-12"
+>
+  <div class="relative py-3 sm:max-w-xl sm:mx-auto">
+    <div
+      class="absolute inset-0 bg-gradient-to-r from-red-600 to-light-blue-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-lg"
+    />
+    <div class="relative px-4 py-10 bg-white shadow-lg sm:rounded-lg sm:p-20">
+      {#if user}
+        <h1 class="mb-4 text-2xl font-bold text-gray-900">
+          {user.username}'s Profile
+        </h1>
+        <p class="text-gray-700">Email: {user.email}</p>
 
-    <form on:submit|preventDefault={handleUpdateFlair}>
-      <label for="flair">Class Flair:</label>
-      <select id="flair" bind:value={flair}>
-        {#each flairs as classFlair}
-          <option>{classFlair}</option>
-        {/each}
-      </select>
-      <button type="submit">Update Flair</button>
-    </form>
-    <p>{statusMessage}</p>
-    <p>{errorMessage}</p>
-    <button on:click|preventDefault={handleLogout}>Logout</button>
-  {:else if errorMessage}
-    <p>{errorMessage}</p>
-  {:else}
-    <p>Loading...</p>
-  {/if}
+        <form
+          on:submit|preventDefault={handleUpdateFlair}
+          class="space-y-6 mt-4"
+        >
+          <div>
+            <label
+              for="flair"
+              class="text-sm font-bold text-gray-600 block mb-2"
+              >Class Flair:</label
+            >
+            <select
+              id="flair"
+              bind:value={flair}
+              class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg"
+            >
+              {#each flairs as classFlair}
+                <option>{classFlair}</option>
+              {/each}
+            </select>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              class="w-full py-2 px-4 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700"
+              >Update Flair</button
+            >
+          </div>
+        </form>
+
+        <p class="mt-4 text-green-500">{statusMessage}</p>
+        <p class="mt-4 text-red-500">{errorMessage}</p>
+
+        <div class="mt-4">
+          <button
+            on:click|preventDefault={handleLogout}
+            class="w-full py-2 px-4 bg-red-800 text-white rounded-lg shadow-md hover:bg-red-900"
+            >Logout</button
+          >
+        </div>
+      {:else if errorMessage}
+        <p class="mt-4 text-red-500">{errorMessage}</p>
+      {:else}
+        <p>Loading...</p>
+      {/if}
+    </div>
+  </div>
 </main>

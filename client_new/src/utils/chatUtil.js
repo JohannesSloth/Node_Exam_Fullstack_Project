@@ -31,7 +31,6 @@ async function getMessages() {
   return await response.json();
 }
 
-
 export default {
   sendMessage,
   getMessages,
