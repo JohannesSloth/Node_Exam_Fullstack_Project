@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import userRouter from "./routers/userRouter.js";
 import chatRouter from "./routers/chatRouter.js";
 import db from "./database/connection.js";
+import xss from "xss";
 
 dotenv.config();
 
@@ -31,7 +32,7 @@ app.use(
 );
 
 const server = http.createServer(app);
-const io = new Server(server, {
+export const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["*"],
@@ -42,19 +43,27 @@ io.on("connection", (socket) => {
   console.log("New client connected");
 
   socket.on("chat message", async (msg) => {
-    const { username, message } = msg;
-  
-    if (!username || !message) {
-      console.log("Invalid message received: missing username or message field");
+    const { username, flair, message  } = msg;
+
+    if (!username || !message || !flair) {
+      console.log(
+        "Invalid message received: missing username, message or flair"
+      );
       return;
     }
-  
-    const newMessage = { username, message, timestamp: new Date() };
-  
+
+    const sanitizedMessage = xss(message);
+
+    const newMessage = {
+      username,
+      flair,
+      message: sanitizedMessage,
+      timestamp: new Date(),
+      deletedByUser: false,
+    };
+
     try {
       await db.chatMessages.insertOne(newMessage);
-  
-      // Broadcast the new message to all clients
       io.emit("chat message", newMessage);
     } catch (err) {
       console.log("An error occurred when saving a message:", err);

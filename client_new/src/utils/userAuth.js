@@ -110,7 +110,10 @@ async function updateFlair(flair) {
     throw new Error(error.message);
   }
 
-  return await response.json();
+  const responseData = await response.json();
+  user.set(responseData.user);
+
+  return await responseData;
 }
 
 export default {
