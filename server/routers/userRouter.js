@@ -147,4 +147,19 @@ router.put("/api/auth/user/flair", async (req, res) => {
   }
 });
 
+router.delete("/api/auth/user/deleteaccount", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({error:"Not authenticated"});
+  }
+
+  try {
+    console.log("Session userId for user about to be deleted: ", req.session.userId);
+    await db.users.findOneAndDelete( {_id: new ObjectId(req.session.userId)})
+    res.status(200).json({message: "User deleted successfully"});
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({error: "Error deleting user"});
+  }
+})
+
 export default router;

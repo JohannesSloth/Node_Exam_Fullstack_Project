@@ -67,22 +67,6 @@ async function getMessages() {
   return await response.json();
 }
 
-async function getActiveUsers() {
-  const response = await fetch(`${SERVER_URL}/api/chat/activeusers`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorResponse = await response.json();
-    throw new Error(errorResponse.error);
-  }
-
-  return await response.json()
-}
-
 function sendUserJoinedNotification(username) {
   socket.emit("user joined", username)
 }
@@ -111,7 +95,6 @@ function subscribeToUserLeftNotification(callback) {
 export default {
   sendMessage,
   getMessages,
-  getActiveUsers,
   subscribeToChat,
   deleteMessage,
   subscribeToDelete,

@@ -1,7 +1,5 @@
 <script>
-  import { onMount } from "svelte";
-  import { onDestroy } from "svelte";
-  import { tick } from "svelte";
+  import { onMount, onDestroy, afterUpdate, tick } from "svelte";
   import chatUtil from "../../utils/chatUtil.js";
   import { user as userStore } from "../../stores/userStore.js";
   import { navigate } from "svelte-navigator";
@@ -11,8 +9,6 @@
   let newMessage = "";
   let user;
   let errorMessage = "";
-
-  let activeUsers = [];
 
   let unsubscribeFromUserstore;
   let unsubscribeFromChat;
@@ -25,18 +21,10 @@
     messages = await chatUtil.getMessages();
   }
 
-  async function fetchInitialActiveUsers() {
-    activeUsers = await chatUtil.getActiveUsers();
-  }
-
   function setupUserSubscription() {
     unsubscribeFromUserstore = userStore.subscribe((currentUser) => {
-      console.log("currentUser: ", currentUser);
       if (currentUser) {
         user = currentUser;
-        console.log("User: ", user);
-      } else {
-        navigate("/login");
       }
     });
   }
@@ -87,13 +75,14 @@
           flair: "MechaGnomeBot",
         };
         messages = [...messages, notification];
-        activeUsers = [...activeUsers, username];
       }
     );
   }
 
   function handleSendUserJoinedNotification() {
-    chatUtil.sendUserJoinedNotification(user.username);
+    if (user && user.username) {
+      chatUtil.sendUserJoinedNotification(user.username);
+    }
   }
 
   function setupUserLeftNotificationSubscription() {
@@ -108,30 +97,37 @@
           flair: "MechaGnomeBot",
         };
         messages = [...messages, notification];
-        activeUsers = activeUsers.filter((user) => user !== username);
       });
   }
 
   function handleSendUserLeftNotification() {
-    chatUtil.sendUserLeftNotification(user.username);
+    if (user && user.username) {
+      chatUtil.sendUserLeftNotification(user.username);
+    }
   }
 
   onMount(async () => {
     try {
       setupUserSubscription();
+      if (!user) {
+        navigate("/login")
+        return;
+      }
       await fetchInitialMessages();
-      await fetchInitialActiveUsers();
-      scrollToBottom();
       setupChatSubscription();
       setupEditSubscribtion();
       setupDeleteSubscription();
       setupUserNotificationSubscription();
       setupUserLeftNotificationSubscription();
-      handleSendUserJoinedNotification();
+      if (user) {
+        handleSendUserJoinedNotification();
+      }
     } catch (error) {
       console.error(error);
     }
   });
+
+  afterUpdate(scrollToBottom);
 
   onDestroy(() => {
     unsubscribeFromUserstore && unsubscribeFromUserstore();
@@ -141,7 +137,9 @@
     unsubscribeFromUserNotifications && unsubscribeFromUserNotifications();
     unsubscribeFromUserLeftNotifications &&
       unsubscribeFromUserLeftNotifications();
-    handleSendUserLeftNotification();
+    if (user) {
+      handleSendUserLeftNotification();
+    }
   });
 
   function handleSendMessage() {
@@ -184,7 +182,7 @@
 
   function onScroll() {
     const { scrollTop, scrollHeight, clientHeight } = chatBox;
-    const atBottom = scrollHeight - scrollTop === clientHeight;
+    const atBottom = scrollHeight - scrollTop - clientHeight < 5;
 
     shouldScrollToBottom = atBottom;
   }
@@ -224,13 +222,28 @@
     }
   }
 
-  function parseEmotes(message) {
-    const emoteRegex = /:(.*?):/g;
-    let parsedMessage = message.replace(emoteRegex, (match, emoteName) => {
+  function parseLinks(inputMessage) {
+    const urlRegex = /((https?:\/\/)[^\s]+)/g;
+    return inputMessage.replace(urlRegex, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">${url}</a>`;
+    });
+}
+
+function parseEmotes(inputMessage) {
+    const emoteRegex = /:([a-z0-9]+?):/gi;
+    return inputMessage.replace(emoteRegex, (match, emoteName) => {
       return `<img src="/images/betterttv-images/${emoteName}.webp" alt="${emoteName}" class="inline-block" />`;
     });
-    return parsedMessage;
-  }
+}
+
+function parseAndSanitizeMessage(message) {
+    const messageWithParsedLinks = parseLinks(message);
+    const messageWithParsedLinksAndEmotes = parseEmotes(messageWithParsedLinks)
+    const sanitizedAndParsedMessage = DOMPurify.sanitize(messageWithParsedLinksAndEmotes, { ADD_ATTR: ["target"] })
+    //console.log("sanitizedAndParsedMessage: ",sanitizedAndParsedMessage);
+    return sanitizedAndParsedMessage;
+}
+
 
   let editId = null;
   let editText = "";
@@ -255,19 +268,18 @@
 <main
   class="min-h-screen-minus-navbar bg-gray-800 py-6 flex flex-col justify-center sm:py-12"
 >
-<div class="relative py-3 flex justify-center">
-  <div
-  class="relative px-4 py-10 bg-white shadow-lg sm:rounded-lg sm:p-10 sm:w-1/2 sm:mr-4"
-  >
-  <!----<div
-    class="absolute inset-0 bg-gradient-to-r from-red-600 to-light-blue-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-lg sm:w-1/2 sm:mr-4"
-  /> -->
-  <h1 class="mb-4 text-2xl font-bold text-gray-900">Chat</h1>
-  
-  <div
-  class="chat-messages overflow-y-scroll h-64 w-full lg:h-96 lg:w-full mb-4 bg-gray-700 rounded-lg p-4"
-  bind:this={chatBox}
-  on:scroll={onScroll}>
+  <div class="relative py-3 sm:w-1/2 sm:mx-auto">
+    <div
+      class="absolute inset-0 bg-gradient-to-r from-red-600 to-light-blue-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-lg"
+    />
+    <div class="relative px-4 py-10 bg-white shadow-lg sm:rounded-lg sm:p-10">
+      <h1 class="mb-4 text-2xl font-bold text-gray-900">Chat</h1>
+
+      <div
+        class="chat-messages overflow-y-scroll h-64 w-full lg:h-96 lg:w-full mb-4 bg-gray-700 rounded-lg p-4"
+        bind:this={chatBox}
+        on:scroll={onScroll}
+      >
         {#each messages as message (message._id)}
           <div class="relative group mb-2">
             <span class="text-sm text-neutral-50"
@@ -286,7 +298,7 @@
               >{message.username}:</span
             >
             <span class="text-neutral-50"
-              >{@html parseEmotes(message.message)}</span
+              >{@html parseAndSanitizeMessage(message.message)}</span
             >
 
             {#if message.username === user.username && !message.deletedByUser}
@@ -340,17 +352,6 @@
           >Send</button
         >
       </form>
-    </div>
-
-    <div class="bg-gray-700 rounded-lg p-4 w-52">
-      <h2 class="mb-4 text-xl font-bold text-neutral-50">Active Users</h2>
-      <ul
-        class="overflow-y-auto h-64 w-full lg:h-96 lg:w-full bg-gray-700 rounded-lg p-4"
-      >
-        {#each activeUsers as user (user)}
-          <li class="mb-2 text-neutral-50">{user}</li>
-        {/each}
-      </ul>
     </div>
   </div>
 </main>

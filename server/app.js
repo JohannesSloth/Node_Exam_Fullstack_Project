@@ -44,12 +44,10 @@ io.on("connection", (socket) => {
   console.log("New client connected");
   
   socket.on("user joined", async (username) => {
-    await db.activeUsers.insertOne({ username });
     io.emit("user joined", username)
   })
   
   socket.on("user left", async (username) => {
-    await db.activeUsers.deleteOne({ username })
     io.emit("user left", username)
   })
 

@@ -116,6 +116,29 @@ async function updateFlair(flair) {
   return await responseData;
 }
 
+async function deleteUserAccount() {
+  const response = await fetch(`${SERVER_URL}/api/auth/user/deleteaccount`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const errorResponse = await response.json();
+    const error = new Error(errorResponse.error);
+    throw error;
+  }
+
+  user.set(null);
+
+  let unsubscribe = user.subscribe(value => {
+    console.log("Userstore after deleting account: ", value);
+  });
+  unsubscribe();
+
+  return await response.json();
+}
+
+
 export default {
   SERVER_URL,
   login,
@@ -123,4 +146,5 @@ export default {
   getUserProfile,
   updateFlair,
   logout,
+  deleteUserAccount,
 };

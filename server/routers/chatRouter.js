@@ -25,17 +25,6 @@ router.get("/api/chat", async (req, res) => {
   }
 });
 
-router.get("/api/chat/activeusers", async (req, res) => {
-  try {
-    const activeUsers = await db.activeUsers.find().toArray();
-    res.json(activeUsers);
-  } catch (err) {
-    res
-      .status(500)
-      .json({ error: "An error occurred when fetching active users." });
-  }
-});
-
 router.put("/api/chat/:id", async (req, res) => {
   try {
     const id = new ObjectId(req.params.id);
