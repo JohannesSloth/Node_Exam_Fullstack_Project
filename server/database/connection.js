@@ -8,5 +8,7 @@ const db = client.db("wowchatter");
 
 export default {
     users: db.collection("users"),
-    chatMessages: db.collection("chatMessages")
+    chatMessages: db.collection("chatMessages"),
+    messageVersions: db.collection("messageVersions"),
+    activeUsers: db.collection("activeUsers")
 }
