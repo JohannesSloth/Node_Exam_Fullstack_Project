@@ -1,6 +1,6 @@
 <script>
   import { useNavigate } from "svelte-navigator";
-  import userAuth from "../../utils/userAuth.js";
+  import userAuthUtil from "../../utils/userAuthUtil.js";
 
   const navigate = useNavigate();
 
@@ -13,7 +13,7 @@
     event.preventDefault();
 
     try {
-      const response = await userAuth.signup(username, email, password);
+      const response = await userAuthUtil.signup(username, email, password);
 
       if (response.error) {
         errorMessage = response.error;

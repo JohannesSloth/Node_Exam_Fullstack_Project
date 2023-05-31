@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { useNavigate } from "svelte-navigator";
   import { user as userStore } from "../../stores/userStore.js";
-  import userAuth from "../../utils/userAuth.js";
+  import userAuthUtil from "../../utils/userAuthUtil.js";
 
   const navigate = useNavigate();
 
@@ -22,7 +22,7 @@
 
   async function handleLogin() {
     try {
-      const response = await userAuth.login(username, password);
+      const response = await userAuthUtil.login(username, password);
       if (response.error) {
         errorMessage = response.error;
       } else {

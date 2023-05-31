@@ -3,8 +3,9 @@
   import { navigate } from "svelte-navigator";
   import DOMPurify from "dompurify";
   import { user as userStore } from "../../stores/userStore.js";
-  import chatUtil from "../../utils/chatUtil.js";
-  import { classFlair } from "../../utils/classFlairUtil.js";
+  import chatMessageUtil from "../../utils/chatMessageUtil.js";
+  import { classColour } from "../../utils/classColourUtil.js";
+  import { formatTime, parseAndSanitizeMessage } from "../../utils/parseFormatUtil.js"
 
   //Declare variables
   let user;
@@ -22,7 +23,7 @@
 
   //Declare function for fetching previously sent messages
   async function fetchPreviousMessages() {
-    messages = await chatUtil.getPreviousMessages();
+    messages = await chatMessageUtil.getPreviousMessages();
   }
 
   //Declare setup functions for subscriptions
@@ -35,7 +36,7 @@
   }
 
   function setupNewMessageSubscription() {
-    unsubscribeFromNewMessages = chatUtil.subscribeToNewMessages((newMsg) => {
+    unsubscribeFromNewMessages = chatMessageUtil.subscribeToNewMessages((newMsg) => {
       if (!messages.find((msg) => msg._id === newMsg._id)) {
         messages = [...messages, newMsg];
         onNewMessage();
@@ -44,7 +45,7 @@
   }
 
   function setupEditedMessagesSubscription() {
-    unsubscribeFromEditedMessages = chatUtil.subscribeToEditedMessages((editedMsg) => {
+    unsubscribeFromEditedMessages = chatMessageUtil.subscribeToEditedMessages((editedMsg) => {
       messages = messages.map((msg) =>
         msg._id === editedMsg._id ? editedMsg : msg
       );
@@ -52,7 +53,7 @@
   }
 
   function setupDeletedMessagesSubscription() {
-    unsubscribeFromDeletedMessages = chatUtil.subscribeToDeletedMessages((id) => {
+    unsubscribeFromDeletedMessages = chatMessageUtil.subscribeToDeletedMessages((id) => {
       messages = messages.map((msg) =>
         msg._id === id
           ? {
@@ -67,7 +68,7 @@
 
   function setupUserJoinedNotificationSubscription() {
     unsubscribeFromUserJoinedNotifications =
-      chatUtil.subscribeToUserJoinedNotification((username) => {
+      chatMessageUtil.subscribeToUserJoinedNotification((username) => {
         const notification = {
           _id: `notification-${Date.now()}`,
           username: "MechaGnomeBot",
@@ -81,7 +82,7 @@
 
   function setupUserLeftNotificationSubscription() {
     unsubscribeFromUserLeftNotifications =
-      chatUtil.subscribeToUserLeftNotification((username) => {
+      chatMessageUtil.subscribeToUserLeftNotification((username) => {
         const notification = {
           _id: `notification-${Date.now()}`,
           username: "MechaGnomeBot",
@@ -96,13 +97,13 @@
   //Handle user joined/left notifications
   function handleSendUserJoinedNotification() {
     if (user && user.username) {
-      chatUtil.sendUserJoinedNotification(user.username);
+      chatMessageUtil.sendUserJoinedNotification(user.username);
     }
   }
 
   function handleSendUserLeftNotification() {
     if (user && user.username) {
-      chatUtil.sendUserLeftNotification(user.username);
+      chatMessageUtil.sendUserLeftNotification(user.username);
     }
   }
 
@@ -147,7 +148,7 @@
   function handleSendMessage() {
     errorMessage = "";
     let sanitizedMessage = DOMPurify.sanitize(newMessage);
-    chatUtil.sendMessage(user.username, user.flair, sanitizedMessage, (ack) => {
+    chatMessageUtil.sendMessage(user.username, user.flair, sanitizedMessage, (ack) => {
       if (ack.error) {
         errorMessage = ack.error;
       }
@@ -167,10 +168,9 @@
     if (event && event.key !== "Enter") {
       return;
     }
-
     errorMessage = "";
     let sanitizedMessage = DOMPurify.sanitize(editText);
-    chatUtil.editMessage(id, sanitizedMessage, (ack) => {
+    chatMessageUtil.editMessage(id, sanitizedMessage, (ack) => {
       if (ack.error) {
         errorMessage = ack.error;
       }
@@ -182,47 +182,10 @@
   async function handleDeleteMessage(id) {
     errorMessage = "";
     try {
-      await chatUtil.deleteMessage(id);
+      await chatMessageUtil.deleteMessage(id);
     } catch (error) {
       errorMessage = "Error deleting message: " + error.message;
     }
-  }
-
-  //Formatting and parsing helpers
-  function formatTime(timestamp) {
-    let date = new Date(timestamp);
-    let hours = date.getHours().toString().padStart(2, "0");
-    let minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
-  }
-
-  function parseLinks(inputMessage) {
-    const urlRegex = /((https?:\/\/)[^\s]+)/g;
-    return inputMessage.replace(urlRegex, (url) => {
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">${url}</a>`;
-    });
-  }
-
-  function parseEmotes(inputMessage) {
-    const emoteRegex = /:([a-z0-9]+?):/gi;
-    return inputMessage.replace(emoteRegex, (match, emoteName) => {
-      return `<img src="/images/betterttv-images/${emoteName}.webp" alt="${emoteName}" class="inline-block" />`;
-    });
-  }
-
-  function parseAndSanitizeMessage(message) {
-    const messageWithParsedLinks = parseLinks(message);
-    const messageWithParsedLinksAndEmotes = parseEmotes(messageWithParsedLinks);
-    const sanitizedAndParsedMessage = DOMPurify.sanitize(
-      messageWithParsedLinksAndEmotes,
-      { ADD_ATTR: ["target"] }
-    );
-    return sanitizedAndParsedMessage;
-  }
-
-  //Flair handling
-  function handleClassFlair(flair) {
-    return classFlair(flair)
   }
 
   //Handle chatbox scrolling
@@ -277,7 +240,7 @@
                 height="20"
               /></span
             >
-            <span class="font-bold {handleClassFlair(message.flair)}"
+            <span class="font-bold {classColour(message.flair)}"
               >{message.username}:</span
             >
             <span class="text-neutral-50"

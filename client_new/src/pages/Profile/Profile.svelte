@@ -1,6 +1,6 @@
 <script>
   import { onMount } from "svelte";
-  import userAuth from "../../utils/userAuth.js";
+  import userAuthUtil from "../../utils/userAuthUtil.js";
   import { navigate } from "svelte-navigator";
   import { user as userStore } from "../../stores/userStore.js";
 
@@ -42,7 +42,7 @@
 
   async function handleUpdateFlair() {
     try {
-      const response = await userAuth.updateFlair(flair);
+      const response = await userAuthUtil.updateFlair(flair);
 
       if (response.error) {
         errorMessage = response.error;
@@ -57,7 +57,7 @@
   
   async function handleLogout() {
     try {
-      const response = await userAuth.logout();
+      const response = await userAuthUtil.logout();
 
       if (response.error) {
         errorMessage = response.error;
@@ -76,7 +76,7 @@
     }
 
     try {
-      const response = await userAuth.deleteUserAccount();
+      const response = await userAuthUtil.deleteUserAccount();
 
       if (response.error) {
         errorMessage = response.error;

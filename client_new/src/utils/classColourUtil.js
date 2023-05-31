@@ -1,4 +1,4 @@
-export function classFlair(flair) {
+export function classColour(flair) {
     switch (flair) {
       case "Death Knight":
         return "text-[#C41E3A]";
