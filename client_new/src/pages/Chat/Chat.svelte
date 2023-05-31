@@ -4,24 +4,25 @@
   import DOMPurify from "dompurify";
   import { user as userStore } from "../../stores/userStore.js";
   import chatUtil from "../../utils/chatUtil.js";
+  import { classFlair } from "../../utils/classFlairUtil.js";
 
   //Declare variables
+  let user;
   let messages = [];
   let newMessage = "";
   let errorMessage = "";
-  let user;
 
   //Declare subscriptions
   let unsubscribeFromUserstore;
-  let unsubscribeFromChat;
-  let unsubscribeFromEdit;
-  let unsubscribeFromDelete;
-  let unsubscribeFromUserNotifications;
+  let unsubscribeFromNewMessages;
+  let unsubscribeFromEditedMessages;
+  let unsubscribeFromDeletedMessages;
+  let unsubscribeFromUserJoinedNotifications;
   let unsubscribeFromUserLeftNotifications;
 
-  //Handle fetching initial messages
-  async function fetchInitialMessages() {
-    messages = await chatUtil.getMessages();
+  //Declare function for fetching previously sent messages
+  async function fetchPreviousMessages() {
+    messages = await chatUtil.getPreviousMessages();
   }
 
   //Declare setup functions for subscriptions
@@ -33,8 +34,8 @@
     });
   }
 
-  function setupChatSubscription() {
-    unsubscribeFromChat = chatUtil.subscribeToChat((newMsg) => {
+  function setupNewMessageSubscription() {
+    unsubscribeFromNewMessages = chatUtil.subscribeToNewMessages((newMsg) => {
       if (!messages.find((msg) => msg._id === newMsg._id)) {
         messages = [...messages, newMsg];
         onNewMessage();
@@ -42,16 +43,16 @@
     });
   }
 
-  function setupEditSubscribtion() {
-    unsubscribeFromEdit = chatUtil.subscribeToEdit((editedMsg) => {
+  function setupEditedMessagesSubscription() {
+    unsubscribeFromEditedMessages = chatUtil.subscribeToEditedMessages((editedMsg) => {
       messages = messages.map((msg) =>
         msg._id === editedMsg._id ? editedMsg : msg
       );
     });
   }
 
-  function setupDeleteSubscription() {
-    unsubscribeFromDelete = chatUtil.subscribeToDelete((id) => {
+  function setupDeletedMessagesSubscription() {
+    unsubscribeFromDeletedMessages = chatUtil.subscribeToDeletedMessages((id) => {
       messages = messages.map((msg) =>
         msg._id === id
           ? {
@@ -64,8 +65,8 @@
     });
   }
 
-  function setupUserNotificationSubscription() {
-    unsubscribeFromUserNotifications =
+  function setupUserJoinedNotificationSubscription() {
+    unsubscribeFromUserJoinedNotifications =
       chatUtil.subscribeToUserJoinedNotification((username) => {
         const notification = {
           _id: `notification-${Date.now()}`,
@@ -113,11 +114,11 @@
         navigate("/login");
         return;
       }
-      await fetchInitialMessages();
-      setupChatSubscription();
-      setupEditSubscribtion();
-      setupDeleteSubscription();
-      setupUserNotificationSubscription();
+      await fetchPreviousMessages();
+      setupNewMessageSubscription();
+      setupEditedMessagesSubscription();
+      setupDeletedMessagesSubscription();
+      setupUserJoinedNotificationSubscription();
       setupUserLeftNotificationSubscription();
       if (user) {
         handleSendUserJoinedNotification();
@@ -131,10 +132,10 @@
 
   onDestroy(() => {
     unsubscribeFromUserstore && unsubscribeFromUserstore();
-    unsubscribeFromChat && unsubscribeFromChat();
-    unsubscribeFromEdit && unsubscribeFromEdit();
-    unsubscribeFromDelete && unsubscribeFromDelete();
-    unsubscribeFromUserNotifications && unsubscribeFromUserNotifications();
+    unsubscribeFromNewMessages && unsubscribeFromNewMessages();
+    unsubscribeFromEditedMessages && unsubscribeFromEditedMessages();
+    unsubscribeFromDeletedMessages && unsubscribeFromDeletedMessages();
+    unsubscribeFromUserJoinedNotifications && unsubscribeFromUserJoinedNotifications();
     unsubscribeFromUserLeftNotifications &&
       unsubscribeFromUserLeftNotifications();
     if (user) {
@@ -162,7 +163,7 @@
     editText = text;
   }
 
-  async function handleEditSubmit(event, id) {
+  async function handleEditMessage(event, id) {
     if (event && event.key !== "Enter") {
       return;
     }
@@ -220,39 +221,8 @@
   }
 
   //Flair handling
-  function getFlairClass(flair) {
-    switch (flair) {
-      case "Death Knight":
-        return "text-[#C41E3A]";
-      case "Demon Hunter":
-        return "text-[#A330C9]";
-      case "Druid":
-        return "text-[#FF7C0A]";
-      case "Evoker":
-        return "text-[#33937F]";
-      case "Hunter":
-        return "text-[#AAD372]";
-      case "Mage":
-        return "text-[#3FC7EB]";
-      case "Monk":
-        return "text-[#00FF98]";
-      case "Paladin":
-        return "text-[#F48CBA]";
-      case "Priest":
-        return "text-[#FFFFFF]";
-      case "Rogue":
-        return "text-[#FFF468]";
-      case "Shaman":
-        return "text-[#0070DD]";
-      case "Warlock":
-        return "text-[#8788EE]";
-      case "Warrior":
-        return "text-[#C69B6D]";
-      case "MechaGnomeBot":
-        return "text-[#cbd5e1]";
-      default:
-        return "text-black";
-    }
+  function handleClassFlair(flair) {
+    return classFlair(flair)
   }
 
   //Handle chatbox scrolling
@@ -261,7 +231,6 @@
 
   async function onNewMessage() {
     await tick();
-
     if (shouldScrollToBottom) {
       scrollToBottom();
     }
@@ -308,7 +277,7 @@
                 height="20"
               /></span
             >
-            <span class="font-bold {getFlairClass(message.flair)}"
+            <span class="font-bold {handleClassFlair(message.flair)}"
               >{message.username}:</span
             >
             <span class="text-neutral-50"
@@ -320,11 +289,11 @@
                 <div>
                   <input
                     bind:value={editText}
-                    on:keydown={(event) => handleEditSubmit(event, message._id)}
+                    on:keydown={(event) => handleEditMessage(event, message._id)}
                     class="border rounded p-2 bg-white text-gray-700 shadow"
                   />
                   <button
-                    on:click={() => handleEditSubmit(null, message._id)}
+                    on:click={() => handleEditMessage(null, message._id)}
                     class="ml-2 bg-blue-500 text-white rounded p-2 shadow"
                     >OK</button
                   >

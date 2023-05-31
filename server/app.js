@@ -51,7 +51,7 @@ io.on("connection", (socket) => {
     io.emit("user left", username)
   })
 
-  socket.on("chat message", async (msg, callback) => {
+  socket.on("send message", async (msg, callback) => {
     const { username, flair, message } = msg;
   
     if (!username || !message || !flair) {
@@ -71,14 +71,14 @@ io.on("connection", (socket) => {
   
     try {
       await db.chatMessages.insertOne(newMessage);
-      io.emit("chat message", newMessage);
+      io.emit("send message", newMessage);
       callback({ success: true });
     } catch (err) {
       callback({ error: "An error occurred when saving the message to the database." });
     }
   });
 
-  socket.on("message edited", async (msg, callback) => {
+  socket.on("edit message", async (msg, callback) => {
     const id = new ObjectId(msg.id);
     const message = msg.message;
 
@@ -102,7 +102,7 @@ io.on("connection", (socket) => {
         { returnDocument: "after" }
       );
       const updatedMessage = result.value;
-      io.emit("message edited", updatedMessage);
+      io.emit("edit message", updatedMessage);
       callback({ success: true });
     } catch (err) {
       callback({ error: "An error occurred when saving the updated message to the database." });

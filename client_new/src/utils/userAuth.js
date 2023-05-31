@@ -47,7 +47,6 @@ async function logout() {
   return result;
 }
 
-
 async function updateFlair(flair) {
   const response = await fetch(`${SERVER_URL}/api/auth/user/flair`, {
     method: "PUT",

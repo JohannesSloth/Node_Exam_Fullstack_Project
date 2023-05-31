@@ -37,7 +37,7 @@ router.put("/api/chat/:id", async (req, res) => {
       return res.status(404).json({ error: "Message not found." });
     }
 
-    io.emit("message deleted", id);
+    io.emit("delete message", id);
 
     res.status(200).json({ message: "Message successfully deleted." });
   } catch (err) {
