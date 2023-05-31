@@ -1,2 +1,2 @@
-#Node Exam Fullstack Project
-##By Johannes Sloth
+# WowChatter
+## A Node Fullstack Exam Project By Johannes Sloth
