@@ -1,22 +1,28 @@
-const SERVER_URL = "http://127.0.0.1:5000";
-
+import { SERVER_URL, handleResponse } from "./fetchUtil.js";
 import { io } from "socket.io-client";
+
 const socket = io(SERVER_URL);
 
-function sendMessage(username, flair, message,) {
-  socket.emit("chat message", { username, flair, message });
+async function getMessages() {
+  const response = await fetch(`${SERVER_URL}/api/chat`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  return await handleResponse(response);
 }
 
 function subscribeToChat(callback) {
   socket.on("chat message", (msg) => callback(msg));
-
+  
   return () => {
     socket.off("chat message");
   };
 }
 
-function editMessage(id, message) {
-  socket.emit('message edited', { id, message });
+function sendMessage(username, flair, message,) {
+  socket.emit("chat message", { username, flair, message });
 }
 
 function subscribeToEdit(callback) {
@@ -27,20 +33,8 @@ function subscribeToEdit(callback) {
   };
 }
 
-async function deleteMessage(id) {
-  const response = await fetch(`${SERVER_URL}/api/chat/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  
-  if (!response.ok) {
-    const errorResponse = await response.json();
-    throw new Error(errorResponse.error);
-  }
-  
-  return await response.json();
+function editMessage(id, message) {
+  socket.emit('message edited', { id, message });
 }
 
 function subscribeToDelete(callback) {
@@ -51,27 +45,17 @@ function subscribeToDelete(callback) {
   };
 }
 
-async function getMessages() {
-  const response = await fetch(`${SERVER_URL}/api/chat`, {
-    method: "GET",
+async function deleteMessage(id) {
+  const response = await fetch(`${SERVER_URL}/api/chat/${id}`, {
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
   });
-
-  if (!response.ok) {
-    const errorResponse = await response.json();
-    throw new Error(errorResponse.error);
-  }
-
-  return await response.json();
+  return await handleResponse(response);
 }
 
-function sendUserJoinedNotification(username) {
-  socket.emit("user joined", username)
-}
-
-function subscribeToUserNotification(callback) {
+function subscribeToUserJoinedNotification(callback) {
   socket.on("user joined", (username) => callback(username));
 
   return () => {
@@ -79,8 +63,8 @@ function subscribeToUserNotification(callback) {
   };
 }
 
-function sendUserLeftNotification(username) {
-  socket.emit("user left", username)
+function sendUserJoinedNotification(username) {
+  socket.emit("user joined", username)
 }
 
 function subscribeToUserLeftNotification(callback) {
@@ -91,17 +75,21 @@ function subscribeToUserLeftNotification(callback) {
   };
 }
 
+function sendUserLeftNotification(username) {
+  socket.emit("user left", username)
+}
+
 
 export default {
-  sendMessage,
   getMessages,
   subscribeToChat,
-  deleteMessage,
-  subscribeToDelete,
-  editMessage,
+  sendMessage,
   subscribeToEdit,
+  editMessage,
+  subscribeToDelete,
+  deleteMessage,
+  subscribeToUserJoinedNotification,
   sendUserJoinedNotification,
-  subscribeToUserNotification,
-  sendUserLeftNotification,
   subscribeToUserLeftNotification,
+  sendUserLeftNotification,
 };

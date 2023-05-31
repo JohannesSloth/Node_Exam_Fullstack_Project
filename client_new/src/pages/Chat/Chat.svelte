@@ -1,15 +1,17 @@
 <script>
   import { onMount, onDestroy, afterUpdate, tick } from "svelte";
-  import chatUtil from "../../utils/chatUtil.js";
-  import { user as userStore } from "../../stores/userStore.js";
   import { navigate } from "svelte-navigator";
   import DOMPurify from "dompurify";
+  import { user as userStore } from "../../stores/userStore.js";
+  import chatUtil from "../../utils/chatUtil.js";
 
+  //Declare variables
   let messages = [];
   let newMessage = "";
-  let user;
   let errorMessage = "";
+  let user;
 
+  //Declare subscriptions
   let unsubscribeFromUserstore;
   let unsubscribeFromChat;
   let unsubscribeFromEdit;
@@ -17,10 +19,12 @@
   let unsubscribeFromUserNotifications;
   let unsubscribeFromUserLeftNotifications;
 
+  //Handle fetching initial messages
   async function fetchInitialMessages() {
     messages = await chatUtil.getMessages();
   }
 
+  //Declare setup functions for subscriptions
   function setupUserSubscription() {
     unsubscribeFromUserstore = userStore.subscribe((currentUser) => {
       if (currentUser) {
@@ -31,7 +35,6 @@
 
   function setupChatSubscription() {
     unsubscribeFromChat = chatUtil.subscribeToChat((newMsg) => {
-      console.log("Received message via socketio:", newMsg);
       if (!messages.find((msg) => msg._id === newMsg._id)) {
         messages = [...messages, newMsg];
         onNewMessage();
@@ -41,7 +44,6 @@
 
   function setupEditSubscribtion() {
     unsubscribeFromEdit = chatUtil.subscribeToEdit((editedMsg) => {
-      console.log("Received edited message via socketio:", editedMsg);
       messages = messages.map((msg) =>
         msg._id === editedMsg._id ? editedMsg : msg
       );
@@ -50,7 +52,6 @@
 
   function setupDeleteSubscription() {
     unsubscribeFromDelete = chatUtil.subscribeToDelete((id) => {
-      console.log("Received deletion via socketio:", id);
       messages = messages.map((msg) =>
         msg._id === id
           ? {
@@ -64,9 +65,8 @@
   }
 
   function setupUserNotificationSubscription() {
-    unsubscribeFromUserNotifications = chatUtil.subscribeToUserNotification(
-      (username) => {
-        console.log("Received user join notification via socketio:", username);
+    unsubscribeFromUserNotifications =
+      chatUtil.subscribeToUserJoinedNotification((username) => {
         const notification = {
           _id: `notification-${Date.now()}`,
           username: "MechaGnomeBot",
@@ -75,20 +75,12 @@
           flair: "MechaGnomeBot",
         };
         messages = [...messages, notification];
-      }
-    );
-  }
-
-  function handleSendUserJoinedNotification() {
-    if (user && user.username) {
-      chatUtil.sendUserJoinedNotification(user.username);
-    }
+      });
   }
 
   function setupUserLeftNotificationSubscription() {
     unsubscribeFromUserLeftNotifications =
       chatUtil.subscribeToUserLeftNotification((username) => {
-        console.log("Received user left notification via socketio:", username);
         const notification = {
           _id: `notification-${Date.now()}`,
           username: "MechaGnomeBot",
@@ -100,17 +92,25 @@
       });
   }
 
+  //Handle user joined/left notifications
+  function handleSendUserJoinedNotification() {
+    if (user && user.username) {
+      chatUtil.sendUserJoinedNotification(user.username);
+    }
+  }
+
   function handleSendUserLeftNotification() {
     if (user && user.username) {
       chatUtil.sendUserLeftNotification(user.username);
     }
   }
 
+  //Svelte lifecycle functions
   onMount(async () => {
     try {
       setupUserSubscription();
       if (!user) {
-        navigate("/login")
+        navigate("/login");
         return;
       }
       await fetchInitialMessages();
@@ -142,22 +142,42 @@
     }
   });
 
+  //Handle sending, editing and deletion of messages
   function handleSendMessage() {
-    console.log("Unsanitized Message in handleSendMessage: ", newMessage);
     let sanitizedMessage = DOMPurify.sanitize(newMessage);
-    console.log("Sanitized Message in handleSendMessage: ", sanitizedMessage);
     chatUtil.sendMessage(user.username, user.flair, sanitizedMessage);
     newMessage = "";
   }
 
+  let editId = null;
+  let editText = "";
+
+  function startEdit(id, text) {
+    editId = id;
+    editText = text;
+  }
+
+  async function handleEditSubmit(event, id) {
+    if (event && event.key !== "Enter") {
+      return;
+    }
+
+    let sanitizedMessage = DOMPurify.sanitize(editText);
+    chatUtil.editMessage(id, sanitizedMessage);
+    editId = null;
+    editText = "";
+  }
+
   async function handleDeleteMessage(id) {
+    errorMessage = "";
     try {
       await chatUtil.deleteMessage(id);
     } catch (error) {
-      errorMessage = "Error deleting message.";
+      errorMessage = "Error deleting message: " + error.message;
     }
   }
 
+  //Formatting and parsing helpers
   function formatTime(timestamp) {
     let date = new Date(timestamp);
     let hours = date.getHours().toString().padStart(2, "0");
@@ -165,28 +185,31 @@
     return `${hours}:${minutes}`;
   }
 
-  let chatBox;
-  let shouldScrollToBottom = true;
-
-  async function onNewMessage() {
-    await tick();
-
-    if (shouldScrollToBottom) {
-      scrollToBottom();
-    }
+  function parseLinks(inputMessage) {
+    const urlRegex = /((https?:\/\/)[^\s]+)/g;
+    return inputMessage.replace(urlRegex, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">${url}</a>`;
+    });
   }
 
-  function scrollToBottom() {
-    chatBox.scrollTop = chatBox.scrollHeight;
+  function parseEmotes(inputMessage) {
+    const emoteRegex = /:([a-z0-9]+?):/gi;
+    return inputMessage.replace(emoteRegex, (match, emoteName) => {
+      return `<img src="/images/betterttv-images/${emoteName}.webp" alt="${emoteName}" class="inline-block" />`;
+    });
   }
 
-  function onScroll() {
-    const { scrollTop, scrollHeight, clientHeight } = chatBox;
-    const atBottom = scrollHeight - scrollTop - clientHeight < 5;
-
-    shouldScrollToBottom = atBottom;
+  function parseAndSanitizeMessage(message) {
+    const messageWithParsedLinks = parseLinks(message);
+    const messageWithParsedLinksAndEmotes = parseEmotes(messageWithParsedLinks);
+    const sanitizedAndParsedMessage = DOMPurify.sanitize(
+      messageWithParsedLinksAndEmotes,
+      { ADD_ATTR: ["target"] }
+    );
+    return sanitizedAndParsedMessage;
   }
 
+  //Flair handling
   function getFlairClass(flair) {
     switch (flair) {
       case "Death Knight":
@@ -222,46 +245,27 @@
     }
   }
 
-  function parseLinks(inputMessage) {
-    const urlRegex = /((https?:\/\/)[^\s]+)/g;
-    return inputMessage.replace(urlRegex, (url) => {
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">${url}</a>`;
-    });
-}
+  //Handle chatbox scrolling
+  let chatBox;
+  let shouldScrollToBottom = true;
 
-function parseEmotes(inputMessage) {
-    const emoteRegex = /:([a-z0-9]+?):/gi;
-    return inputMessage.replace(emoteRegex, (match, emoteName) => {
-      return `<img src="/images/betterttv-images/${emoteName}.webp" alt="${emoteName}" class="inline-block" />`;
-    });
-}
+  async function onNewMessage() {
+    await tick();
 
-function parseAndSanitizeMessage(message) {
-    const messageWithParsedLinks = parseLinks(message);
-    const messageWithParsedLinksAndEmotes = parseEmotes(messageWithParsedLinks)
-    const sanitizedAndParsedMessage = DOMPurify.sanitize(messageWithParsedLinksAndEmotes, { ADD_ATTR: ["target"] })
-    //console.log("sanitizedAndParsedMessage: ",sanitizedAndParsedMessage);
-    return sanitizedAndParsedMessage;
-}
-
-
-  let editId = null;
-  let editText = "";
-
-  function startEdit(id, text) {
-    editId = id;
-    editText = text;
+    if (shouldScrollToBottom) {
+      scrollToBottom();
+    }
   }
 
-  async function handleEditSubmit(event, id) {
-    if (event && event.key !== "Enter") {
-      return;
-    }
+  function scrollToBottom() {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 
-    let sanitizedMessage = DOMPurify.sanitize(editText);
-    chatUtil.editMessage(id, sanitizedMessage);
-    editId = null;
-    editText = "";
+  function onScroll() {
+    const { scrollTop, scrollHeight, clientHeight } = chatBox;
+    const atBottom = scrollHeight - scrollTop - clientHeight < 5;
+
+    shouldScrollToBottom = atBottom;
   }
 </script>
 
@@ -336,6 +340,10 @@ function parseAndSanitizeMessage(message) {
           </div>
         {/each}
       </div>
+
+      {#if errorMessage}
+        <div class="mb-4 text-red-500">{errorMessage}</div>
+      {/if}
 
       <form
         on:submit|preventDefault={handleSendMessage}

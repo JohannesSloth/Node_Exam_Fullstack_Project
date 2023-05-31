@@ -1,6 +1,13 @@
 import { user } from "../stores/userStore.js";
+import { SERVER_URL, handleResponse } from "./fetchUtil.js";
 
-const SERVER_URL = "http://127.0.0.1:5000";
+async function getUserProfile() {
+  const response = await fetch(`${SERVER_URL}/api/auth/user`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return await handleResponse(response);
+}
 
 async function signup(username, email, password) {
   const response = await fetch(`${SERVER_URL}/api/auth/signup`, {
@@ -11,22 +18,7 @@ async function signup(username, email, password) {
     body: JSON.stringify({ username, email, password }),
     credentials: "include",
   });
-
-  if (!response.ok) {
-    const errorResponse = await response.json();
-
-    if (Array.isArray(errorResponse.errors)) {
-      const errorMessage = errorResponse.errors
-        .map((err) => err.msg)
-        .join(", ");
-      throw new Error(errorMessage);
-    }
-
-    const error = new Error(errorResponse.error);
-    throw error;
-  }
-
-  return await response.json();
+  return await handleResponse(response);
 }
 
 async function login(username, password) {
@@ -38,20 +30,8 @@ async function login(username, password) {
     body: JSON.stringify({ username, password }),
     credentials: "include",
   });
-
-  if (!response.ok) {
-    const errorResponse = await response.json();
-    const error = new Error(errorResponse.error);
-    throw error;
-  }
-
-  const responseData = await response.json();
+  const responseData = await handleResponse(response);
   user.set(responseData.user);
-
-  let unsubscribe = user.subscribe(value => {
-    console.log("Userstore after login: ", value);
-  });
-  unsubscribe();
 
   return responseData;
 }
@@ -61,39 +41,12 @@ async function logout() {
     method: "POST",
     credentials: "include",
   });
+  const result = await handleResponse(response);
+  user.set(null);
 
-  if (!response.ok) {
-    const errorResponse = await response.json();
-    const error = new Error(errorResponse.error);
-    throw error;
-  }
-
-  user.set(null)
-
-  let unsubscribe = user.subscribe(value => {
-    console.log("Userstore after logout: ", value);
-  });
-  unsubscribe();
-
-  return await response.json();
+  return result;
 }
 
-async function getUserProfile() {
-  const response = await fetch(`${SERVER_URL}/api/auth/user`, {
-    method: "GET",
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const error = new Error(
-      "An error occurred while fetching the user profile"
-    );
-    error.status = response.status;
-    throw error;
-  }
-
-  return await response.json();
-}
 
 async function updateFlair(flair) {
   const response = await fetch(`${SERVER_URL}/api/auth/user/flair`, {
@@ -104,16 +57,10 @@ async function updateFlair(flair) {
     body: JSON.stringify({ flair }),
     credentials: "include",
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message);
-  }
-
-  const responseData = await response.json();
+  const responseData = await handleResponse(response);
   user.set(responseData.user);
 
-  return await responseData;
+  return responseData;
 }
 
 async function deleteUserAccount() {
@@ -121,30 +68,17 @@ async function deleteUserAccount() {
     method: "DELETE",
     credentials: "include",
   });
-
-  if (!response.ok) {
-    const errorResponse = await response.json();
-    const error = new Error(errorResponse.error);
-    throw error;
-  }
-
+  const result = await handleResponse(response);
   user.set(null);
 
-  let unsubscribe = user.subscribe(value => {
-    console.log("Userstore after deleting account: ", value);
-  });
-  unsubscribe();
-
-  return await response.json();
+  return result;
 }
 
-
 export default {
-  SERVER_URL,
-  login,
-  signup,
   getUserProfile,
-  updateFlair,
+  signup,
+  login,
   logout,
+  updateFlair,
   deleteUserAccount,
 };

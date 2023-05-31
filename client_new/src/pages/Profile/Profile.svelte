@@ -40,21 +40,6 @@
     return unsubscribe;
   });
 
-  async function handleLogout() {
-    try {
-      const response = await userAuth.logout();
-
-      if (response.error) {
-        errorMessage = response.error;
-      } else {
-        console.log("Successfully logged out");
-        navigate("/login");
-      }
-    } catch (error) {
-      errorMessage = "An error occurred logging out. Please try again.";
-    }
-  }
-
   async function handleUpdateFlair() {
     try {
       const response = await userAuth.updateFlair(flair);
@@ -67,6 +52,21 @@
       }
     } catch (error) {
       errorMessage = error.message;
+    }
+  }
+  
+  async function handleLogout() {
+    try {
+      const response = await userAuth.logout();
+
+      if (response.error) {
+        errorMessage = response.error;
+      } else {
+        console.log("Successfully logged out");
+        navigate("/login");
+      }
+    } catch (error) {
+      errorMessage = "An error occurred logging out. Please try again.";
     }
   }
 

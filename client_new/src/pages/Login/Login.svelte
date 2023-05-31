@@ -20,12 +20,9 @@
     return unsubscribe;
   });
 
-  async function handleLogin(event) {
-    event.preventDefault();
-
+  async function handleLogin() {
     try {
       const response = await userAuth.login(username, password);
-
       if (response.error) {
         errorMessage = response.error;
       } else {
