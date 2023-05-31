@@ -144,8 +144,13 @@
 
   //Handle sending, editing and deletion of messages
   function handleSendMessage() {
+    errorMessage = "";
     let sanitizedMessage = DOMPurify.sanitize(newMessage);
-    chatUtil.sendMessage(user.username, user.flair, sanitizedMessage);
+    chatUtil.sendMessage(user.username, user.flair, sanitizedMessage, (ack) => {
+      if (ack.error) {
+        errorMessage = ack.error;
+      }
+    });
     newMessage = "";
   }
 
@@ -162,8 +167,13 @@
       return;
     }
 
+    errorMessage = "";
     let sanitizedMessage = DOMPurify.sanitize(editText);
-    chatUtil.editMessage(id, sanitizedMessage);
+    chatUtil.editMessage(id, sanitizedMessage, (ack) => {
+      if (ack.error) {
+        errorMessage = ack.error;
+      }
+    });
     editId = null;
     editText = "";
   }

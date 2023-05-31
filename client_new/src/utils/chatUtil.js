@@ -21,8 +21,8 @@ function subscribeToChat(callback) {
   };
 }
 
-function sendMessage(username, flair, message,) {
-  socket.emit("chat message", { username, flair, message });
+function sendMessage(username, flair, message, callback) {
+  socket.emit("chat message", { username, flair, message }, callback);
 }
 
 function subscribeToEdit(callback) {
@@ -33,8 +33,8 @@ function subscribeToEdit(callback) {
   };
 }
 
-function editMessage(id, message) {
-  socket.emit('message edited', { id, message });
+function editMessage(id, message, callback) {
+  socket.emit('message edited', { id, message }, callback);
 }
 
 function subscribeToDelete(callback) {

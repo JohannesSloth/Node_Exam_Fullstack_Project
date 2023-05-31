@@ -51,18 +51,16 @@ io.on("connection", (socket) => {
     io.emit("user left", username)
   })
 
-  socket.on("chat message", async (msg) => {
+  socket.on("chat message", async (msg, callback) => {
     const { username, flair, message } = msg;
-
+  
     if (!username || !message || !flair) {
-      console.log(
-        "Invalid message received: missing username, message or flair"
-      );
+      callback({ error: "Invalid message data received: missing username, message or flair" });
       return;
     }
-
+  
     const sanitizedMessage = xss(message);
-
+  
     const newMessage = {
       username,
       flair,
@@ -70,22 +68,22 @@ io.on("connection", (socket) => {
       timestamp: new Date(),
       deletedByUser: false,
     };
-
+  
     try {
       await db.chatMessages.insertOne(newMessage);
       io.emit("chat message", newMessage);
+      callback({ success: true });
     } catch (err) {
-      console.log("An error occurred when saving a message:", err);
+      callback({ error: "An error occurred when saving the message to the database." });
     }
   });
 
-  socket.on("message edited", async (msg) => {
-    console.log("msg: ", msg);
+  socket.on("message edited", async (msg, callback) => {
     const id = new ObjectId(msg.id);
     const message = msg.message;
 
     if (!id || !message) {
-      console.log("Invalid message edit received: missing id or message");
+      callback({ error: 'Invalid message edit data received: missing id or message'});
       return;
     }
 
@@ -105,8 +103,9 @@ io.on("connection", (socket) => {
       );
       const updatedMessage = result.value;
       io.emit("message edited", updatedMessage);
+      callback({ success: true });
     } catch (err) {
-      console.log("An error occurred when editing a message:", err);
+      callback({ error: "An error occurred when saving the updated message to the database." });
     }
   });
 
