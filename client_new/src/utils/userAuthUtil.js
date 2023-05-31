@@ -2,7 +2,7 @@ import { user } from "../stores/userStore.js";
 import { SERVER_URL, handleResponse } from "./fetchUtil.js";
 
 async function getUserProfile() {
-  const response = await fetch(`${SERVER_URL}/api/auth/user`, {
+  const response = await fetch(`${SERVER_URL}/api/auth`, {
     method: "GET",
     credentials: "include",
   });
@@ -48,7 +48,7 @@ async function logout() {
 }
 
 async function updateFlair(flair) {
-  const response = await fetch(`${SERVER_URL}/api/auth/user/flair`, {
+  const response = await fetch(`${SERVER_URL}/api/auth/flair`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -63,7 +63,7 @@ async function updateFlair(flair) {
 }
 
 async function deleteUserAccount() {
-  const response = await fetch(`${SERVER_URL}/api/auth/user/deleteaccount`, {
+  const response = await fetch(`${SERVER_URL}/api/auth/deleteaccount`, {
     method: "DELETE",
     credentials: "include",
   });

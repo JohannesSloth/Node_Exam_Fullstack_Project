@@ -1,14 +1,14 @@
 import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
 import session from "express-session";
+import dotenv from "dotenv";
+import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
+import xss from "xss";
+import { ObjectId } from "mongodb";
 import userRouter from "./routers/userRouter.js";
 import chatRouter from "./routers/chatRouter.js";
 import db from "./database/connection.js";
-import xss from "xss";
-import { ObjectId } from "mongodb";
 
 dotenv.config();
 
@@ -31,6 +31,9 @@ app.use(
     origin: true,
   })
 );
+
+app.use(userRouter);
+app.use(chatRouter);
 
 const server = http.createServer(app);
 export const io = new Server(server, {
@@ -113,9 +116,6 @@ io.on("connection", (socket) => {
     console.log("Client disconnected");
   });
 });
-
-app.use(userRouter);
-app.use(chatRouter);
 
 const port = process.env.PORT || 5000;
 server.listen(port, () => {

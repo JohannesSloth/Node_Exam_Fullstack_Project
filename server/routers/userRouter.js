@@ -1,12 +1,33 @@
 import { Router } from "express";
-import bcrypt from "bcryptjs";
 import { body, validationResult } from "express-validator";
-import apiLimiter from "../utils/rateLimiter.js";
-import db from "../database/connection.js";
-import { sendSignedUpMail } from "../utils/nodemailer.js";
+import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
+import db from "../database/connection.js";
+import apiLimiter from "../utils/rateLimiter.js";
+import { sendSignedUpMail } from "../utils/nodemailer.js";
 
 const router = Router();
+
+router.get("/api/auth", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  try {
+    const user = await db.users.findOne(
+      { _id: new ObjectId(req.session.userId) },
+      { projection: { password: 0 } }
+    );
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 router.post(
   "/api/auth/signup",
@@ -27,13 +48,6 @@ router.post(
       .withMessage("Email is required")
       .isEmail()
       .withMessage("Invalid email address"),
-    /*.custom(async (value) => {
-        const user = await db.users.findOne({ email: value });
-        if (user) {
-          throw new Error('Email already in use');
-        }
-        return true;
-      }),*/
     body("password")
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters long"),
@@ -100,29 +114,7 @@ router.post("/api/auth/logout", (req, res) => {
   });
 });
 
-router.get("/api/auth/user", async (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-
-  try {
-    console.log("Session userId:", req.session.userId);
-    const user = await db.users.findOne(
-      { _id: new ObjectId(req.session.userId) },
-      { projection: { password: 0 } }
-    );
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    res.status(200).json({ user });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-router.put("/api/auth/user/flair", async (req, res) => {
+router.put("/api/auth/flair", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -147,13 +139,12 @@ router.put("/api/auth/user/flair", async (req, res) => {
   }
 });
 
-router.delete("/api/auth/user/deleteaccount", async (req, res) => {
+router.delete("/api/auth/deleteaccount", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({error:"Not authenticated"});
   }
 
   try {
-    console.log("Session userId for user about to be deleted: ", req.session.userId);
     await db.users.findOneAndDelete( {_id: new ObjectId(req.session.userId)})
     res.status(200).json({message: "User deleted successfully"});
   } catch (err) {

@@ -1,14 +1,14 @@
 import { Router } from "express";
+import { ObjectId } from "mongodb";
 import db from "../database/connection.js";
 import { io } from "../app.js";
-import { ObjectId } from "mongodb";
 
 const router = Router();
 
 router.get("/api/chat", async (req, res) => {
   try {
     const messages = await db.chatMessages.find().toArray();
-    const sanitizedMessages = messages.map((msg) => {
+    const deletedMessagesReplaced = messages.map((msg) => {
       if (msg.deletedByUser) {
         return {
           ...msg,
@@ -17,7 +17,7 @@ router.get("/api/chat", async (req, res) => {
       }
       return msg;
     });
-    res.json(sanitizedMessages);
+    res.json(deletedMessagesReplaced);
   } catch (err) {
     res
       .status(500)

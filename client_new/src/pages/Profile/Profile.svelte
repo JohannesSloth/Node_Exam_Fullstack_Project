@@ -62,7 +62,6 @@
       if (response.error) {
         errorMessage = response.error;
       } else {
-        console.log("Successfully logged out");
         navigate("/login");
       }
     } catch (error) {
@@ -81,7 +80,6 @@
       if (response.error) {
         errorMessage = response.error;
       } else {
-        console.log("Account deleted successfully");
         navigate("/login");
       }
     } catch (error) {

@@ -19,7 +19,6 @@
         errorMessage = response.error;
       } else {
         navigate("/profile");
-        console.log("Successfully signed up.");
       }
     } catch (error) {
       errorMessage = error.message;

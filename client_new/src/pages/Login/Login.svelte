@@ -27,7 +27,6 @@
         errorMessage = response.error;
       } else {
         navigate("/chat");
-        console.log("Successfully logged in.");
       }
     } catch (error) {
       errorMessage = error.message;
