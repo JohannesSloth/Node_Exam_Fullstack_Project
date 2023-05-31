@@ -15,7 +15,7 @@ async function getPreviousMessages() {
 
 function subscribeToNewMessages(callback) {
   socket.on("send message", (msg) => callback(msg));
-  
+
   return () => {
     socket.off("send message");
   };
@@ -31,7 +31,7 @@ function subscribeToEditedMessages(callback) {
 
 function subscribeToDeletedMessages(callback) {
   socket.on("delete message", (id) => callback(id));
-  
+
   return () => {
     socket.off("delete message");
   };
@@ -58,7 +58,7 @@ function sendMessage(username, flair, message, callback) {
 }
 
 function editMessage(id, message, callback) {
-  socket.emit('edit message', { id, message }, callback);
+  socket.emit("edit message", { id, message }, callback);
 }
 
 async function deleteMessage(id) {
@@ -72,11 +72,11 @@ async function deleteMessage(id) {
 }
 
 function sendUserJoinedNotification(username) {
-  socket.emit("user joined", username)
+  socket.emit("user joined", username);
 }
 
 function sendUserLeftNotification(username) {
-  socket.emit("user left", username)
+  socket.emit("user left", username);
 }
 
 export default {

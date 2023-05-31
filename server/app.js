@@ -45,25 +45,28 @@ export const io = new Server(server, {
 
 io.on("connection", (socket) => {
   console.log("New client connected");
-  
+
   socket.on("user joined", async (username) => {
-    io.emit("user joined", username)
-  })
-  
+    io.emit("user joined", username);
+  });
+
   socket.on("user left", async (username) => {
-    io.emit("user left", username)
-  })
+    io.emit("user left", username);
+  });
 
   socket.on("send message", async (msg, callback) => {
     const { username, flair, message } = msg;
-  
+
     if (!username || !message || !flair) {
-      callback({ error: "Invalid message data received: missing username, message or flair" });
+      callback({
+        error:
+          "Invalid message data received: missing username, message or flair",
+      });
       return;
     }
-  
+
     const sanitizedMessage = xss(message);
-  
+
     const newMessage = {
       username,
       flair,
@@ -71,13 +74,15 @@ io.on("connection", (socket) => {
       timestamp: new Date(),
       deletedByUser: false,
     };
-  
+
     try {
       await db.chatMessages.insertOne(newMessage);
       io.emit("send message", newMessage);
       callback({ success: true });
     } catch (err) {
-      callback({ error: "An error occurred when saving the message to the database." });
+      callback({
+        error: "An error occurred when saving the message to the database.",
+      });
     }
   });
 
@@ -86,7 +91,9 @@ io.on("connection", (socket) => {
     const message = msg.message;
 
     if (!id || !message) {
-      callback({ error: 'Invalid message edit data received: missing id or message'});
+      callback({
+        error: "Invalid message edit data received: missing id or message",
+      });
       return;
     }
 
@@ -101,14 +108,19 @@ io.on("connection", (socket) => {
 
       const result = await db.chatMessages.findOneAndUpdate(
         { _id: id },
-        { $set: { message: message, editedAt: new Date(), editedByUser: true } },
+        {
+          $set: { message: message, editedAt: new Date(), editedByUser: true },
+        },
         { returnDocument: "after" }
       );
       const updatedMessage = result.value;
       io.emit("edit message", updatedMessage);
       callback({ success: true });
     } catch (err) {
-      callback({ error: "An error occurred when saving the updated message to the database." });
+      callback({
+        error:
+          "An error occurred when saving the updated message to the database.",
+      });
     }
   });
 

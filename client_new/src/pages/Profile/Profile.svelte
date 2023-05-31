@@ -54,7 +54,7 @@
       errorMessage = error.message;
     }
   }
-  
+
   async function handleLogout() {
     try {
       const response = await userAuthUtil.logout();
@@ -70,7 +70,11 @@
   }
 
   async function handleDeleteUserAccount() {
-    if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete your account? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
@@ -83,10 +87,10 @@
         navigate("/login");
       }
     } catch (error) {
-      errorMessage = "An error occurred deleting your account. Please try again.";
+      errorMessage =
+        "An error occurred deleting your account. Please try again.";
     }
   }
-
 </script>
 
 <main
@@ -123,7 +127,7 @@
               {/each}
             </select>
           </div>
-          
+
           <p class="mt-4 text-green-500">{statusMessage}</p>
           <p class="mt-4 text-red-500">{errorMessage}</p>
 
@@ -140,10 +144,9 @@
           <button
             on:click|preventDefault={handleDeleteUserAccount}
             class="w-full py-2 px-4 bg-purple-900 text-white rounded-lg shadow-md hover:bg-red-900"
-          >Delete Account</button>
+            >Delete Account</button
+          >
         </div>
-        
-
 
         <div class="mt-4">
           <button

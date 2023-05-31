@@ -5,15 +5,16 @@
   import { user as userStore } from "../../stores/userStore.js";
   import chatMessageUtil from "../../utils/chatMessageUtil.js";
   import { classColour } from "../../utils/classColourUtil.js";
-  import { formatTime, parseAndSanitizeMessage } from "../../utils/parseFormatUtil.js"
+  import {
+    formatTime,
+    parseAndSanitizeMessage,
+  } from "../../utils/parseFormatUtil.js";
 
-  //Declare variables
   let user;
   let messages = [];
   let newMessage = "";
   let errorMessage = "";
 
-  //Declare subscriptions
   let unsubscribeFromUserstore;
   let unsubscribeFromNewMessages;
   let unsubscribeFromEditedMessages;
@@ -21,12 +22,10 @@
   let unsubscribeFromUserJoinedNotifications;
   let unsubscribeFromUserLeftNotifications;
 
-  //Declare function for fetching previously sent messages
   async function fetchPreviousMessages() {
     messages = await chatMessageUtil.getPreviousMessages();
   }
 
-  //Declare setup functions for subscriptions
   function setupUserSubscription() {
     unsubscribeFromUserstore = userStore.subscribe((currentUser) => {
       if (currentUser) {
@@ -36,34 +35,40 @@
   }
 
   function setupNewMessageSubscription() {
-    unsubscribeFromNewMessages = chatMessageUtil.subscribeToNewMessages((newMsg) => {
-      if (!messages.find((msg) => msg._id === newMsg._id)) {
-        messages = [...messages, newMsg];
-        onNewMessage();
+    unsubscribeFromNewMessages = chatMessageUtil.subscribeToNewMessages(
+      (newMsg) => {
+        if (!messages.find((msg) => msg._id === newMsg._id)) {
+          messages = [...messages, newMsg];
+          onNewMessage();
+        }
       }
-    });
+    );
   }
 
   function setupEditedMessagesSubscription() {
-    unsubscribeFromEditedMessages = chatMessageUtil.subscribeToEditedMessages((editedMsg) => {
-      messages = messages.map((msg) =>
-        msg._id === editedMsg._id ? editedMsg : msg
-      );
-    });
+    unsubscribeFromEditedMessages = chatMessageUtil.subscribeToEditedMessages(
+      (editedMsg) => {
+        messages = messages.map((msg) =>
+          msg._id === editedMsg._id ? editedMsg : msg
+        );
+      }
+    );
   }
 
   function setupDeletedMessagesSubscription() {
-    unsubscribeFromDeletedMessages = chatMessageUtil.subscribeToDeletedMessages((id) => {
-      messages = messages.map((msg) =>
-        msg._id === id
-          ? {
-              ...msg,
-              message: "<i>This message was deleted by the user</i>",
-              deletedByUser: true,
-            }
-          : msg
-      );
-    });
+    unsubscribeFromDeletedMessages = chatMessageUtil.subscribeToDeletedMessages(
+      (id) => {
+        messages = messages.map((msg) =>
+          msg._id === id
+            ? {
+                ...msg,
+                message: "<i>This message was deleted by the user</i>",
+                deletedByUser: true,
+              }
+            : msg
+        );
+      }
+    );
   }
 
   function setupUserJoinedNotificationSubscription() {
@@ -94,7 +99,6 @@
       });
   }
 
-  //Handle user joined/left notifications
   function handleSendUserJoinedNotification() {
     if (user && user.username) {
       chatMessageUtil.sendUserJoinedNotification(user.username);
@@ -107,7 +111,6 @@
     }
   }
 
-  //Svelte lifecycle functions
   onMount(async () => {
     try {
       setupUserSubscription();
@@ -136,7 +139,8 @@
     unsubscribeFromNewMessages && unsubscribeFromNewMessages();
     unsubscribeFromEditedMessages && unsubscribeFromEditedMessages();
     unsubscribeFromDeletedMessages && unsubscribeFromDeletedMessages();
-    unsubscribeFromUserJoinedNotifications && unsubscribeFromUserJoinedNotifications();
+    unsubscribeFromUserJoinedNotifications &&
+      unsubscribeFromUserJoinedNotifications();
     unsubscribeFromUserLeftNotifications &&
       unsubscribeFromUserLeftNotifications();
     if (user) {
@@ -144,15 +148,19 @@
     }
   });
 
-  //Handle sending, editing and deletion of messages
   function handleSendMessage() {
     errorMessage = "";
     let sanitizedMessage = DOMPurify.sanitize(newMessage);
-    chatMessageUtil.sendMessage(user.username, user.flair, sanitizedMessage, (ack) => {
-      if (ack.error) {
-        errorMessage = ack.error;
+    chatMessageUtil.sendMessage(
+      user.username,
+      user.flair,
+      sanitizedMessage,
+      (ack) => {
+        if (ack.error) {
+          errorMessage = ack.error;
+        }
       }
-    });
+    );
     newMessage = "";
   }
 
@@ -188,7 +196,6 @@
     }
   }
 
-  //Handle chatbox scrolling
   let chatBox;
   let shouldScrollToBottom = true;
 
@@ -252,7 +259,8 @@
                 <div>
                   <input
                     bind:value={editText}
-                    on:keydown={(event) => handleEditMessage(event, message._id)}
+                    on:keydown={(event) =>
+                      handleEditMessage(event, message._id)}
                     class="border rounded p-2 bg-white text-gray-700 shadow"
                   />
                   <button
